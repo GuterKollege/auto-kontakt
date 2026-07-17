@@ -11,8 +11,10 @@
   anklicken - erst danach werden Meldungen zugestellt.
 
   Foto-Uploads funktionieren bei FormSubmit nur ueber einen klassischen
-  Formular-POST (multipart/form-data), daher wird nach dem Absenden auf
-  danke.html weitergeleitet (_next) statt inline.
+  Formular-POST (multipart/form-data). Damit die Seite waehrend des
+  Uploads nicht "haengt", postet das Formular in ein verstecktes iframe
+  (target=fs_frame): waehrenddessen laeuft ein Spinner und der Button ist
+  grau; nach Abschluss leitet JS auf danke.html weiter.
 
   Hosting: Ordner auf GitHub Pages / Cloudflare Pages hochladen.
   Den Link dann per "NFC Tools"-App auf den NFC-Tag schreiben.
@@ -119,7 +121,6 @@
   .file-status {
     display: none;
     align-items: center;
-    justify-content: space-between;
     gap: 10px;
     margin: 10px 2px 0;
     color: var(--muted);
@@ -130,10 +131,20 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .spinner {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    border: 3px solid rgba(59, 130, 246, 0.25);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .remove-btn {
     flex: 0 0 auto;
     width: auto;
-    margin: 0;
+    margin: 0 0 0 auto;
     padding: 6px 10px;
     background: transparent;
     color: var(--accent);
@@ -156,6 +167,18 @@
     cursor: pointer;
   }
   button.submit:active { background: var(--accent-dark); }
+  button.submit.is-sending {
+    background: var(--muted);
+    cursor: default;
+    pointer-events: none;
+  }
+  .error {
+    display: none;
+    color: var(--accent);
+    font-size: 0.9rem;
+    margin-top: 12px;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -163,7 +186,7 @@
     <h1>Schaden am Auto bemerkt?</h1>
     <p class="sub">Danke, dass du dich meldest. Bitte fuelle die Felder aus &mdash; ich melde mich dann so schnell wie moeglich bei dir.</p>
 
-    <form id="damageForm" action="https://formsubmit.co/paul.ruehsen@gmail.com" method="POST" enctype="multipart/form-data">
+    <form id="damageForm" action="https://formsubmit.co/paul.ruehsen@gmail.com" method="POST" enctype="multipart/form-data" target="fs_frame">
       <!-- FormSubmit-Steuerfelder -->
       <input type="hidden" name="_subject" value="Neue Schadensmeldung ueber NFC-Formular" />
       <input type="hidden" name="_template" value="table" />
@@ -177,12 +200,12 @@
       <label for="phone">Deine Telefonnummer *</label>
       <input type="tel" id="phone" name="Telefonnummer" required autocomplete="tel"
              inputmode="tel" pattern="[+0-9()/\s-]{7,25}"
-             title="Bitte eine gueltige Telefonnummer eingeben (mindestens 7 Ziffern; erlaubt sind Ziffern sowie + ( ) / - und Leerzeichen)." />
+             title="Bitte eine gueltige Telefonnummer eingeben." />
 
       <label for="message">Was ist passiert? *</label>
       <textarea id="message" name="Beschreibung" required placeholder="z.B. beim Ausparken den hinteren Kotfluegel gestreift"></textarea>
 
-      <label>Foto vom Schaden (optional)</label>
+      <label>Foto vom Schaden</label>
       <div class="photo-buttons">
         <button type="button" class="photo-btn" id="cameraBtn">📷 Kamera</button>
         <button type="button" class="photo-btn" id="galleryBtn">🖼️ Datei waehlen</button>
@@ -192,12 +215,17 @@
       <input type="file" id="photo" name="attachment" accept="image/*" style="display:none" />
       <div class="file-status" id="fileStatusRow">
         <span class="name" id="fileStatus"></span>
+        <span class="spinner" id="uploadSpinner" style="display:none"></span>
         <button type="button" class="remove-btn" id="removePhoto">&#10005; entfernen</button>
       </div>
 
       <button type="submit" class="submit" id="submitBtn">Absenden</button>
+      <p class="error" id="errorMsg">Das Senden hat sehr lange gedauert. Bitte pruefe deine Internetverbindung und versuch es noch einmal.</p>
     </form>
   </div>
+
+  <!-- Verstecktes Ziel: Formular sendet im Hintergrund hierhin, die Seite bleibt stehen. -->
+  <iframe name="fs_frame" id="fs_frame" title="Versand" style="display:none"></iframe>
 
   <script>
     const photoInput = document.getElementById("photo");
@@ -234,24 +262,56 @@
     function validatePhone() {
       const raw = phone.value.trim();
       const digits = raw.replace(/\D/g, "");
-      if (raw === "") {
-        phone.setCustomValidity(""); // leeres Feld faengt "required" ab
-      } else if (!/^\+?[0-9()/\s-]+$/.test(raw)) {
-        phone.setCustomValidity("Bitte nur Ziffern und + ( ) / - verwenden.");
-      } else if (digits.length < 7 || digits.length > 15) {
-        phone.setCustomValidity("Bitte eine gueltige Telefonnummer eingeben (7 bis 15 Ziffern).");
-      } else {
-        phone.setCustomValidity("");
-      }
+      const ok = raw === "" || (/^\+?[0-9()/\s-]+$/.test(raw) && digits.length >= 7 && digits.length <= 15);
+      // Neutrale Meldung ohne Hinweis auf die konkreten Pruefregeln.
+      phone.setCustomValidity(ok ? "" : "Bitte eine gueltige Telefonnummer eingeben.");
     }
     phone.addEventListener("input", validatePhone);
     phone.addEventListener("blur", validatePhone);
 
-    // Klassischer POST navigiert weg; nur kurzes Button-Feedback.
-    document.getElementById("damageForm").addEventListener("submit", (e) => {
-      validatePhone();
-      if (!document.getElementById("damageForm").checkValidity()) return; // ungueltig -> Browser zeigt Meldung
-      document.getElementById("submitBtn").textContent = "Wird gesendet...";
+    // Hintergrund-Versand: Formular postet in das versteckte iframe, damit die
+    // Seite nicht "haengt". Waehrenddessen Spinner + grauer Button; nach
+    // Abschluss (iframe geladen) Weiterleitung auf die Danke-Seite.
+    const DANKE_URL = "https://guterkollege.github.io/auto-kontakt/danke.html";
+    const form = document.getElementById("damageForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const uploadSpinner = document.getElementById("uploadSpinner");
+    const removeBtn = document.getElementById("removePhoto");
+    const errorMsg = document.getElementById("errorMsg");
+    const fsFrame = document.getElementById("fs_frame");
+    let submitting = false;
+    let watchdog = null;
+
+    form.addEventListener("submit", (e) => {
+      // Bei Ungueltigkeit feuert submit nicht (Browser blockt vorher); hier ist
+      // das Formular also gueltig. Nur Doppel-Absenden verhindern.
+      if (submitting) { e.preventDefault(); return; }
+      submitting = true;
+      errorMsg.style.display = "none";
+      submitBtn.classList.add("is-sending");
+      submitBtn.textContent = "Wird gesendet...";
+      if (photoInput.files.length > 0) {
+        uploadSpinner.style.display = "inline-block";
+        removeBtn.style.display = "none";
+      }
+      // Sicherheitsnetz, falls die Antwort nie kommt.
+      watchdog = setTimeout(() => {
+        if (!submitting) return;
+        submitting = false;
+        submitBtn.classList.remove("is-sending");
+        submitBtn.textContent = "Absenden";
+        uploadSpinner.style.display = "none";
+        if (photoInput.files.length > 0) removeBtn.style.display = "inline-block";
+        errorMsg.style.display = "block";
+      }, 90000);
+      // kein preventDefault -> Formular sendet in das iframe
+    });
+
+    // Feuert nach Abschluss des Versands (FormSubmit leitet im iframe auf _next).
+    fsFrame.addEventListener("load", () => {
+      if (!submitting) return; // ignoriert den initialen about:blank-Load
+      clearTimeout(watchdog);
+      window.location.href = DANKE_URL;
     });
   </script>
 </body>
