@@ -97,28 +97,6 @@
     outline: none;
     border-color: var(--accent);
   }
-  .photo-buttons {
-    display: flex;
-    gap: 10px;
-  }
-  .photo-btn {
-    flex: 1;
-    margin-top: 0;
-    padding: 12px 10px;
-    border-radius: 10px;
-    border: 1px dashed var(--border);
-    background: var(--bg);
-    color: var(--text);
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  .photo-btn:active { background: var(--border); }
-  .file-status {
-    margin: 8px 2px 0;
-    color: var(--muted);
-    font-size: 0.85rem;
-  }
   button {
     margin-top: 26px;
     width: 100%;
@@ -150,7 +128,7 @@
   <div class="card">
     <div id="formView">
       <h1>Schaden am Auto bemerkt?</h1>
-      <p class="sub">Danke, dass du dich meldest. Bitte kurz ausfuellen und wenn moeglich ein Foto anhaengen &mdash; ich melde mich zeitnah bei dir.</p>
+      <p class="sub">Danke, dass du dich meldest. Bitte fuelle alle Felder aus &mdash; ich melde mich dann so schnell wie moeglich bei dir.</p>
 
       <form id="damageForm">
         <input type="hidden" name="access_key" value="0524cebb-1a22-4708-a999-baa02808f8c1" />
@@ -158,24 +136,14 @@
         <input type="hidden" name="from_name" value="NFC Kontaktformular Auto" />
         <input type="text" name="botcheck" style="display:none" tabindex="-1" autocomplete="off" />
 
-        <label for="name">Dein Name</label>
-        <input type="text" id="name" name="Name" autocomplete="name" />
+        <label for="name">Dein Name *</label>
+        <input type="text" id="name" name="Name" required autocomplete="name" />
 
         <label for="phone">Deine Telefonnummer *</label>
         <input type="tel" id="phone" name="Telefonnummer" required autocomplete="tel" />
 
-        <label for="message">Was ist passiert?</label>
-        <textarea id="message" name="Beschreibung" placeholder="z.B. beim Ausparken den hinteren Kotfluegel gestreift"></textarea>
-
-        <label>Foto vom Schaden</label>
-        <div class="photo-buttons">
-          <button type="button" class="photo-btn" id="cameraBtn">📷 Kamera</button>
-          <button type="button" class="photo-btn" id="galleryBtn">🖼️ Datei waehlen</button>
-        </div>
-        <input type="file" id="cameraTemp" accept="image/*" capture="environment" style="display:none" />
-        <input type="file" id="galleryTemp" accept="image/*" style="display:none" />
-        <input type="file" id="photo" name="attachment" style="display:none" />
-        <p class="file-status" id="fileStatus">Kein Foto ausgewaehlt</p>
+        <label for="message">Was ist passiert? *</label>
+        <textarea id="message" name="Beschreibung" required placeholder="z.B. beim Ausparken den hinteren Kotfluegel gestreift"></textarea>
 
         <button type="submit" id="submitBtn">Absenden</button>
         <p class="error" id="errorMsg">Das hat leider nicht geklappt. Bitte versuch es noch einmal.</p>
@@ -189,25 +157,6 @@
   </div>
 
   <script>
-    const photoInput = document.getElementById("photo");
-    const cameraTemp = document.getElementById("cameraTemp");
-    const galleryTemp = document.getElementById("galleryTemp");
-    const fileStatus = document.getElementById("fileStatus");
-
-    document.getElementById("cameraBtn").addEventListener("click", () => cameraTemp.click());
-    document.getElementById("galleryBtn").addEventListener("click", () => galleryTemp.click());
-
-    function adoptFile(tempInput) {
-      if (tempInput.files && tempInput.files[0]) {
-        const dt = new DataTransfer();
-        dt.items.add(tempInput.files[0]);
-        photoInput.files = dt.files;
-        fileStatus.textContent = tempInput.files[0].name;
-      }
-    }
-    cameraTemp.addEventListener("change", () => adoptFile(cameraTemp));
-    galleryTemp.addEventListener("change", () => adoptFile(galleryTemp));
-
     const form = document.getElementById("damageForm");
     const submitBtn = document.getElementById("submitBtn");
     const errorMsg = document.getElementById("errorMsg");
