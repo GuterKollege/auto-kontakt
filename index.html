@@ -175,7 +175,9 @@
       <input type="text" id="name" name="Name" required autocomplete="name" />
 
       <label for="phone">Deine Telefonnummer *</label>
-      <input type="tel" id="phone" name="Telefonnummer" required autocomplete="tel" />
+      <input type="tel" id="phone" name="Telefonnummer" required autocomplete="tel"
+             inputmode="tel" pattern="[+0-9()/\s-]{7,25}"
+             title="Bitte eine gueltige Telefonnummer eingeben (mindestens 7 Ziffern; erlaubt sind Ziffern sowie + ( ) / - und Leerzeichen)." />
 
       <label for="message">Was ist passiert? *</label>
       <textarea id="message" name="Beschreibung" required placeholder="z.B. beim Ausparken den hinteren Kotfluegel gestreift"></textarea>
@@ -227,8 +229,28 @@
       fileStatusRow.style.display = "none";
     });
 
+    // Telefonnummer-Plausibilitaet: erlaubte Zeichen + 7-15 echte Ziffern.
+    const phone = document.getElementById("phone");
+    function validatePhone() {
+      const raw = phone.value.trim();
+      const digits = raw.replace(/\D/g, "");
+      if (raw === "") {
+        phone.setCustomValidity(""); // leeres Feld faengt "required" ab
+      } else if (!/^\+?[0-9()/\s-]+$/.test(raw)) {
+        phone.setCustomValidity("Bitte nur Ziffern und + ( ) / - verwenden.");
+      } else if (digits.length < 7 || digits.length > 15) {
+        phone.setCustomValidity("Bitte eine gueltige Telefonnummer eingeben (7 bis 15 Ziffern).");
+      } else {
+        phone.setCustomValidity("");
+      }
+    }
+    phone.addEventListener("input", validatePhone);
+    phone.addEventListener("blur", validatePhone);
+
     // Klassischer POST navigiert weg; nur kurzes Button-Feedback.
-    document.getElementById("damageForm").addEventListener("submit", () => {
+    document.getElementById("damageForm").addEventListener("submit", (e) => {
+      validatePhone();
+      if (!document.getElementById("damageForm").checkValidity()) return; // ungueltig -> Browser zeigt Meldung
       document.getElementById("submitBtn").textContent = "Wird gesendet...";
     });
   </script>
