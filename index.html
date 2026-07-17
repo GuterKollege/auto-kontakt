@@ -1,0 +1,244 @@
+<!--
+  NFC-Kontaktformular fuers Auto
+  ================================
+  Vor dem Deployment im <form> unten anpassen:
+
+  1. ACCESS_KEY: Kostenlosen Access Key holen auf https://web3forms.com/
+     (nur E-Mail-Adresse angeben, kein Passwort/Account-Login noetig)
+
+  Die eigene Telefonnummer wird NICHT auf der Seite angezeigt. Kontakt
+  laeuft ueber die Angaben, die die schreibende Person im Formular macht;
+  du bekommst sie per E-Mail-Benachrichtigung von Web3Forms.
+
+  Hosting: Diese eine Datei kann kostenlos z.B. auf Cloudflare Pages oder
+  GitHub Pages hochgeladen werden (einfach den Ordner hochladen, fertig).
+  Den daraus entstehenden Link dann per "NFC Tools"-App auf den NFC-Tag
+  schreiben.
+-->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Schaden gemeldet</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card-bg: #ffffff;
+    --text: #1a1d23;
+    --muted: #6b7280;
+    --accent: #d64545;
+    --accent-dark: #b83636;
+    --border: #e2e4e9;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171c;
+      --card-bg: #1f2229;
+      --text: #f0f1f3;
+      --muted: #9aa0ac;
+      --accent: #e2574f;
+      --accent-dark: #c8453e;
+      --border: #2c3038;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px 60px;
+  }
+  .card {
+    width: 100%;
+    max-width: 460px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin: 0 0 6px;
+  }
+  p.sub {
+    margin: 0 0 24px;
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 18px 0 6px;
+  }
+  input[type="text"],
+  input[type="tel"],
+  textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 1rem;
+    font-family: inherit;
+  }
+  textarea { min-height: 90px; resize: vertical; }
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .photo-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  .photo-btn {
+    flex: 1;
+    margin-top: 0;
+    padding: 12px 10px;
+    border-radius: 10px;
+    border: 1px dashed var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .photo-btn:active { background: var(--border); }
+  .file-status {
+    margin: 8px 2px 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  button {
+    margin-top: 26px;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:active { background: var(--accent-dark); }
+  button:disabled { opacity: 0.6; }
+  .error {
+    color: var(--accent);
+    font-size: 0.9rem;
+    margin-top: 12px;
+    display: none;
+  }
+  .thankyou {
+    display: none;
+    text-align: center;
+  }
+  .thankyou h2 { margin-top: 0; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div id="formView">
+      <h1>Schaden am Auto bemerkt?</h1>
+      <p class="sub">Danke, dass du dich meldest. Bitte kurz ausfuellen und wenn moeglich ein Foto anhaengen &mdash; ich melde mich zeitnah bei dir.</p>
+
+      <form id="damageForm">
+        <input type="hidden" name="access_key" value="0524cebb-1a22-4708-a999-baa02808f8c1" />
+        <input type="hidden" name="subject" value="Neue Schadensmeldung ueber NFC-Formular" />
+        <input type="hidden" name="from_name" value="NFC Kontaktformular Auto" />
+        <input type="text" name="botcheck" style="display:none" tabindex="-1" autocomplete="off" />
+
+        <label for="name">Dein Name</label>
+        <input type="text" id="name" name="Name" autocomplete="name" />
+
+        <label for="phone">Deine Telefonnummer *</label>
+        <input type="tel" id="phone" name="Telefonnummer" required autocomplete="tel" />
+
+        <label for="message">Was ist passiert?</label>
+        <textarea id="message" name="Beschreibung" placeholder="z.B. beim Ausparken den hinteren Kotfluegel gestreift"></textarea>
+
+        <label>Foto vom Schaden</label>
+        <div class="photo-buttons">
+          <button type="button" class="photo-btn" id="cameraBtn">📷 Kamera</button>
+          <button type="button" class="photo-btn" id="galleryBtn">🖼️ Datei waehlen</button>
+        </div>
+        <input type="file" id="cameraTemp" accept="image/*" capture="environment" style="display:none" />
+        <input type="file" id="galleryTemp" accept="image/*" style="display:none" />
+        <input type="file" id="photo" name="attachment" style="display:none" />
+        <p class="file-status" id="fileStatus">Kein Foto ausgewaehlt</p>
+
+        <button type="submit" id="submitBtn">Absenden</button>
+        <p class="error" id="errorMsg">Das hat leider nicht geklappt. Bitte versuch es noch einmal.</p>
+      </form>
+    </div>
+
+    <div class="thankyou" id="thankyouView">
+      <h2>Danke fuer deine Nachricht!</h2>
+      <p>Deine Angaben sind bei mir angekommen &mdash; ich melde mich zeitnah bei dir.</p>
+    </div>
+  </div>
+
+  <script>
+    const photoInput = document.getElementById("photo");
+    const cameraTemp = document.getElementById("cameraTemp");
+    const galleryTemp = document.getElementById("galleryTemp");
+    const fileStatus = document.getElementById("fileStatus");
+
+    document.getElementById("cameraBtn").addEventListener("click", () => cameraTemp.click());
+    document.getElementById("galleryBtn").addEventListener("click", () => galleryTemp.click());
+
+    function adoptFile(tempInput) {
+      if (tempInput.files && tempInput.files[0]) {
+        const dt = new DataTransfer();
+        dt.items.add(tempInput.files[0]);
+        photoInput.files = dt.files;
+        fileStatus.textContent = tempInput.files[0].name;
+      }
+    }
+    cameraTemp.addEventListener("change", () => adoptFile(cameraTemp));
+    galleryTemp.addEventListener("change", () => adoptFile(galleryTemp));
+
+    const form = document.getElementById("damageForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const errorMsg = document.getElementById("errorMsg");
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      errorMsg.style.display = "none";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Wird gesendet...";
+
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          body: formData,
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          document.getElementById("formView").style.display = "none";
+          document.getElementById("thankyouView").style.display = "block";
+        } else {
+          throw new Error(result.message || "Unbekannter Fehler");
+        }
+      } catch (err) {
+        errorMsg.style.display = "block";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Absenden";
+      }
+    });
+  </script>
+</body>
+</html>
