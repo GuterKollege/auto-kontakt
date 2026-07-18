@@ -197,7 +197,9 @@
       <input type="hidden" name="_subject" id="subjectField" value="Neue Schadensmeldung ueber NFC-Formular" />
       <input type="hidden" name="_template" value="table" />
       <input type="hidden" name="_captcha" value="false" />
-      <input type="hidden" name="_next" value="https://guterkollege.github.io/auto-kontakt/danke.html" />
+      <!-- Wert wird beim Laden dynamisch gesetzt (siehe Skript), damit eine
+           Umbenennung von Account/Repo die Weiterleitung nicht bricht. -->
+      <input type="hidden" name="_next" id="nextField" value="" />
       <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" />
 
       <label for="name">Dein Name *</label>
@@ -235,7 +237,7 @@
     // ------------------------------------------------------------------
     // NFC-Chip-Konfiguration
     // Jeder Chip bekommt eine eigene URL mit ?tag=<schluessel>, z.B.
-    //   https://guterkollege.github.io/auto-kontakt/?tag=auto2
+    //   https://crashreport-note.github.io/auto-kontakt/?tag=auto2
     // Ohne Parameter (oder bei unbekanntem/noch leerem Tag) geht die
     // Meldung an DEFAULT_TAG - so geht nie eine Meldung verloren.
     // ------------------------------------------------------------------
@@ -298,7 +300,9 @@
     // Hintergrund-Versand: Formular postet in das versteckte iframe, damit die
     // Seite nicht "haengt". Waehrenddessen Spinner + grauer Button; nach
     // Abschluss (iframe geladen) Weiterleitung auf die Danke-Seite.
-    const DANKE_URL = "https://guterkollege.github.io/auto-kontakt/danke.html";
+    // Relativ zur aktuellen Seite aufgeloest -> unabhaengig von Domain/Repo-Name.
+    const DANKE_URL = new URL("danke.html", location.href).href;
+    document.getElementById("nextField").value = DANKE_URL;
     const form = document.getElementById("damageForm");
     const submitBtn = document.getElementById("submitBtn");
     const uploadSpinner = document.getElementById("uploadSpinner");
