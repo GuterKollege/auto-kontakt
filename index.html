@@ -207,11 +207,9 @@
 
       <label>Foto vom Schaden</label>
       <div class="photo-buttons">
-        <button type="button" class="photo-btn" id="cameraBtn">📷 Kamera</button>
-        <button type="button" class="photo-btn" id="galleryBtn">🖼️ Datei waehlen</button>
+        <button type="button" class="photo-btn" id="cameraBtn">📷 Foto aufnehmen</button>
       </div>
       <input type="file" id="cameraTemp" accept="image/*" capture="environment" style="display:none" />
-      <input type="file" id="galleryTemp" accept="image/*" style="display:none" />
       <input type="file" id="photo" name="attachment" accept="image/*" style="display:none" />
       <div class="file-status" id="fileStatusRow">
         <span class="name" id="fileStatus"></span>
@@ -230,12 +228,10 @@
   <script>
     const photoInput = document.getElementById("photo");
     const cameraTemp = document.getElementById("cameraTemp");
-    const galleryTemp = document.getElementById("galleryTemp");
     const fileStatus = document.getElementById("fileStatus");
     const fileStatusRow = document.getElementById("fileStatusRow");
 
     document.getElementById("cameraBtn").addEventListener("click", () => cameraTemp.click());
-    document.getElementById("galleryBtn").addEventListener("click", () => galleryTemp.click());
 
     function adoptFile(tempInput) {
       if (tempInput.files && tempInput.files[0]) {
@@ -247,12 +243,10 @@
       }
     }
     cameraTemp.addEventListener("change", () => adoptFile(cameraTemp));
-    galleryTemp.addEventListener("change", () => adoptFile(galleryTemp));
 
     document.getElementById("removePhoto").addEventListener("click", () => {
       photoInput.value = "";
       cameraTemp.value = "";
-      galleryTemp.value = "";
       fileStatus.textContent = "";
       fileStatusRow.style.display = "none";
     });
