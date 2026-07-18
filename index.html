@@ -16,6 +16,12 @@
   (target=fs_frame): waehrenddessen laeuft ein Spinner und der Button ist
   grau; nach Abschluss leitet JS auf danke.html weiter.
 
+  Mehrere NFC-Chips:
+  Eine einzige Seite bedient alle Chips. Der Chip wird ueber ?tag=<key>
+  unterschieden, die Zuordnung Chip -> Empfaengeradresse steht unten im
+  Skript in der TAGS-Konstante. Ohne/mit unbekanntem Parameter geht die
+  Meldung an DEFAULT_TAG, damit nie eine Meldung verloren geht.
+
   Hosting: Ordner auf GitHub Pages / Cloudflare Pages hochladen.
   Den Link dann per "NFC Tools"-App auf den NFC-Tag schreiben.
 -->
@@ -188,7 +194,7 @@
 
     <form id="damageForm" action="https://formsubmit.co/toni-kusmierz@web.de" method="POST" enctype="multipart/form-data" target="fs_frame">
       <!-- FormSubmit-Steuerfelder -->
-      <input type="hidden" name="_subject" value="Neue Schadensmeldung ueber NFC-Formular" />
+      <input type="hidden" name="_subject" id="subjectField" value="Neue Schadensmeldung ueber NFC-Formular" />
       <input type="hidden" name="_template" value="table" />
       <input type="hidden" name="_captcha" value="false" />
       <input type="hidden" name="_next" value="https://guterkollege.github.io/auto-kontakt/danke.html" />
@@ -226,6 +232,32 @@
   <iframe name="fs_frame" id="fs_frame" title="Versand" style="display:none"></iframe>
 
   <script>
+    // ------------------------------------------------------------------
+    // NFC-Chip-Konfiguration
+    // Jeder Chip bekommt eine eigene URL mit ?tag=<schluessel>, z.B.
+    //   https://guterkollege.github.io/auto-kontakt/?tag=auto2
+    // Ohne Parameter (oder bei unbekanntem/noch leerem Tag) geht die
+    // Meldung an DEFAULT_TAG - so geht nie eine Meldung verloren.
+    // ------------------------------------------------------------------
+    const TAGS = {
+      auto1: { email: "toni-kusmierz@web.de" },
+      auto2: { email: "" }, // TODO: Empfaengeradresse eintragen
+      auto3: { email: "" }, // TODO: Empfaengeradresse eintragen
+      auto4: { email: "" }  // TODO: Empfaengeradresse eintragen
+    };
+    const DEFAULT_TAG = "auto1";
+
+    (function applyTag() {
+      const key = new URLSearchParams(location.search).get("tag");
+      const entry = TAGS[key];
+      const isKnown = !!(entry && entry.email);
+      const activeKey = isKnown ? key : DEFAULT_TAG;
+      const email = isKnown ? entry.email : TAGS[DEFAULT_TAG].email;
+      document.getElementById("damageForm").action = "https://formsubmit.co/" + email;
+      document.getElementById("subjectField").value =
+        "Neue Schadensmeldung (" + activeKey + ")";
+    })();
+
     const photoInput = document.getElementById("photo");
     const cameraTemp = document.getElementById("cameraTemp");
     const fileStatus = document.getElementById("fileStatus");
